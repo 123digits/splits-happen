@@ -13,13 +13,11 @@ public final class BowlingScoreCard {
 	private static final char	STRIKE		= 'X';
 	private static final int	TEN_FRAMES	= 10;
 	private static final int	TEN_PINS	= 10;
-
-	private int					position;
-	private int					score;
-	private String				scoreInput;
+	private int					position	= 0;
+	private int					score		= 0;
 
 	/** Can be run as a standalone program to score 1 or more games.
-	 * @param args 1 or more standalone scores */
+	 * @param args 1 or more Valid Sequences of all rolls in a Ten-Frame game */
 	public static void main(String[] args) {
 		for (String arg : args) {
 			BowlingScoreCard card = new BowlingScoreCard(arg);
@@ -32,58 +30,42 @@ public final class BowlingScoreCard {
 	 * includes 'X', '3/', '5-', or '34'.
 	 * @param scoreInput Valid sequence of all Rolls */
 	public BowlingScoreCard(String scoreInput) {
-		score = 0;
-		this.scoreInput = scoreInput;
+		IntStream.rangeClosed(1, TEN_FRAMES).forEach(i -> score += getFrameScore(scoreInput));
 	}
 
+	/** Returns the final score for a valid sequence of all rolls for a Ten-Frame game.
+	 * @return Final score */
 	public int getGameScore() {
-		if (score == 0 || position == 0) {
-			IntStream.rangeClosed(1, TEN_FRAMES).forEach(i -> score += getFrameScore());
-		}
 		return score;
 	}
 
-	private int getFrameScore() {
-		if (position == scoreInput.length()) {
-			return 0;
-		}
-		char firstRoll = scoreInput.charAt(position++);
-		if (firstRoll == STRIKE) {
-			return scoreStrike(scoreInput, position);
-		}
-		else {
-			char secondRoll = scoreInput.charAt(position++);
-			if (secondRoll == SPARE) {
-				return scoreSpare(scoreInput, position);
-			}
-			else {
-				return charScore(firstRoll) + charScore(secondRoll);
-			}
-		}
+	/** Scores a single frame in a valid sequence of all rolls of a Ten-Frame game.
+	 * @param scoreInput Valid sequence of all rolls of a Ten-Frame game
+	 * @return int value for an entire frame of a Ten-Frame game */
+	private int getFrameScore(String scoreInput) {
+		if (scoreInput.charAt(position) == STRIKE)
+			return TEN_PINS + getCharScore(scoreInput, ++position) + getCharScore(scoreInput, position + 1);
+		else if (scoreInput.charAt(position + 1) == SPARE)
+			return TEN_PINS + getCharScore(scoreInput, position += 2);
+		else
+			return getCharScore(scoreInput, position++) + getCharScore(scoreInput, position++);
 	}
 
-	public static final int scoreSpare(String scoreInput, int position) {
-		return TEN_PINS + charScore(scoreInput.charAt(position));
-	}
-
-	public static final int scoreStrike(String scoreInput, int position) {
-		char secondRoll = scoreInput.charAt(position + 1);
-		if (secondRoll == SPARE) {
-			return 2 * TEN_PINS;
-		}
-		return scoreSpare(scoreInput, position) + charScore(secondRoll);
-	}
-
-	private static final int charScore(char symbol) {
-		switch (symbol) {
+	/** Returns the exact number of pins that were knocked down in a single roll. 'X' for Strike -> 10 pins. '/' for
+	 * Spare -> 10 pins minus the previous roll. '-' for Miss -> 0 pins. '3' -> 3 pins.
+	 * @param inputScore Valid sequence of all rolls of a Ten-Frame game
+	 * @param position Position for a single roll in the valid sequence of all rolls of a Ten-Frame game
+	 * @return int value for a single roll */
+	private static int getCharScore(String inputScore, int position) {
+		switch (inputScore.charAt(position)) {
 			case STRIKE:
 				return TEN_PINS;
 			case SPARE:
-				return TEN_PINS;
+				return TEN_PINS - Character.getNumericValue(inputScore.charAt(position - 1));
 			case MISS:
 				return 0;
 			default:
-				return Character.getNumericValue(symbol);
+				return Character.getNumericValue(inputScore.charAt(position));
 		}
 	}
 
